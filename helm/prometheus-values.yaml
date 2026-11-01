@@ -1,0 +1,148 @@
+alertmanager:
+  enabled: false
+
+prometheus-pushgateway:
+  enabled: false
+
+prometheus-node-exporter:
+  enabled: true
+
+kube-state-metrics:
+  enabled: true
+
+server:
+  replicaCount: 1
+  retention: "24h"
+
+  persistentVolume:
+    enabled: true
+    storageClass: "default"
+    size: 4Gi
+    accessModes:
+      - ReadWriteOnce
+
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1024Mi
+
+  global:
+    scrape_interval: 15s
+    evaluation_interval: 15s
+
+serverFiles:
+  recording_rules.yml:
+    groups:
+      - name: enterprise-slo-recording-rules
+        rules:
+          # SLI 1: Availability Ratio (Success / Total)
+          - record: job:slo_availability:ratio_rate5m
+            expr: sum(rate(http_requests_total{status!~"5.."}[5m])) / sum(rate(http_requests_total[5m]))
+
+          # SLI 2: Latency Ratio (<500ms / Total)
+          - record: job:slo_latency_500ms:ratio_rate5m
+            expr: sum(rate(http_request_duration_seconds_bucket{le="0.5"}[5m])) / sum(rate(http_request_duration_seconds_count[5m]))
+
+          # Error Budget Consumption Rate (Burn Rate vs 99.9% SLO)
+          - record: job:slo_availability_burn_rate:1h
+            expr: (1 - (sum(rate(http_requests_total{status!~"5.."}[1h])) / sum(rate(http_requests_total[1h])))) / (1 - 0.999)
+
+          - record: job:slo_availability_burn_rate:6h
+            expr: (1 - (sum(rate(http_requests_total{status!~"5.."}[6h])) / sum(rate(http_requests_total[6h])))) / (1 - 0.999)
+
+  alerting_rules.yml:
+    groups:
+      - name: enterprise-observability-alerts
+        rules:
+          - alert: KubernetesNodeNotReady
+            expr: kube_node_status_condition{condition="Ready",status="true"} == 0
+            for: 2m
+            labels:
+              severity: critical
+              tier: infrastructure
+            annotations:
+              summary: "Kubernetes Node is NotReady"
+              description: "Node condition Ready has been false for more than 2 minutes."
+
+          - alert: HostHighCpuLoad
+            expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+            for: 3m
+            labels:
+              severity: warning
+              tier: infrastructure
+            annotations:
+              summary: "Host High CPU utilization (>80%)"
+              description: "Node CPU usage is at {{ $value }}%."
+
+          - alert: HostHighMemoryLoad
+            expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+            for: 3m
+            labels:
+              severity: warning
+              tier: infrastructure
+            annotations:
+              summary: "Host High Memory load (>85%)"
+              description: "Node Memory utilization is at {{ $value }}%."
+
+          - alert: KubernetesPodCrashLooping
+            expr: increase(kube_pod_container_status_restarts_total[5m]) > 0
+            for: 1m
+            labels:
+              severity: warning
+              tier: workloads
+            annotations:
+              summary: "Pod is restarting frequently"
+              description: "Container restarted within the last 5 minutes."
+
+          - alert: SampleAppDown
+            expr: up{job="kubernetes-service-endpoints",service="sample-app"} == 0
+            for: 1m
+            labels:
+              severity: critical
+              tier: application
+            annotations:
+              summary: "Sample Application is DOWN"
+              description: "Prometheus cannot scrape sample-app."
+
+          - alert: SampleAppHighErrorRate
+            expr: (sum(rate(http_requests_total{status=~"5.."}[2m])) / sum(rate(http_requests_total[2m]))) * 100 > 5
+            for: 2m
+            labels:
+              severity: critical
+              tier: application
+            annotations:
+              summary: "Sample App HTTP 5xx error rate > 5%"
+              description: "Service HTTP 5xx error rate is currently at {{ $value }}%."
+
+          - alert: SLOAvailabilityBurnRateCritical
+            expr: job:slo_availability_burn_rate:1h > 14.4
+            for: 2m
+            labels:
+              severity: critical
+              tier: slo
+            annotations:
+              summary: "Critical SLO Error Budget Burn Rate (>14.4x)"
+              description: "Consuming more than 2% of 30-day error budget in 1 hour."
+
+          - alert: SLOAvailabilityBurnRateWarning
+            expr: job:slo_availability_burn_rate:6h > 6.0
+            for: 5m
+            labels:
+              severity: warning
+              tier: slo
+            annotations:
+              summary: "Elevated SLO Error Budget Burn Rate (>6x)"
+              description: "Consuming more than 5% of error budget in 6 hours."
+
+configmapReload:
+  prometheus:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 16Mi
+      limits:
+        cpu: 50m
+        memory: 64Mi

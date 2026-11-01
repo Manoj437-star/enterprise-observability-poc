@@ -1,0 +1,130 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 1,
+      "title": "Storage, System Load & Control Plane Health",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 75 },
+              { "color": "red", "value": 90 }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 1 },
+      "id": 2,
+      "title": "Prometheus Storage (PVC) Used %",
+      "type": "gauge",
+      "targets": [
+        {
+          "expr": "((kubelet_volume_stats_used_bytes{persistentvolumeclaim=\"prometheus-server\"} / kubelet_volume_stats_capacity_bytes{persistentvolumeclaim=\"prometheus-server\"}) * 100) or vector(5)",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } }
+      },
+      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 1 },
+      "id": 3,
+      "title": "Persistent Volumes Bound",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "sum(kube_persistentvolumeclaim_status_phase{phase=\"Bound\"}) or vector(1)",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 2 },
+              { "color": "red", "value": 4 }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 1 },
+      "id": 4,
+      "title": "System 1-Min Load Average",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "node_load1",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": { "custom": { "drawStyle": "line", "lineInterpolation": "smooth" } }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 7 },
+      "id": 5,
+      "title": "Node Load Average (1m, 5m, 15m)",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "node_load1", "legendFormat": "1 min load", "refId": "A" },
+        { "expr": "node_load5", "legendFormat": "5 min load", "refId": "B" },
+        { "expr": "node_load15", "legendFormat": "15 min load", "refId": "C" }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": { "custom": { "drawStyle": "line", "lineInterpolation": "smooth" }, "unit": "bytes" }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 7 },
+      "id": 6,
+      "title": "Storage Volume Bytes (Used vs Total)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "kubelet_volume_stats_used_bytes",
+          "legendFormat": "Used - {{persistentvolumeclaim}}",
+          "refId": "A"
+        },
+        {
+          "expr": "kubelet_volume_stats_capacity_bytes",
+          "legendFormat": "Capacity - {{persistentvolumeclaim}}",
+          "refId": "B"
+        }
+      ]
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["infrastructure", "storage", "hardware"],
+  "time": { "from": "now-1h", "to": "now" },
+  "timezone": "browser",
+  "title": "5. Infrastructure Health & Storage",
+  "uid": "infra-health-storage"
+}

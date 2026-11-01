@@ -1,0 +1,8 @@
+# ==============================================================================
+# Terraform Variables Example
+# Copy this file to terraform.tfvars and update with your own Azure configuration
+# ==============================================================================
+
+resource_group_name = "rg-observability-poc"
+location            = "Central India"
+environment         = "POC"

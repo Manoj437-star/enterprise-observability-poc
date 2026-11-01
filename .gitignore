@@ -1,0 +1,48 @@
+# ==============================================================================
+# Terraform Exclusions
+# ==============================================================================
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfplan.*
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# Exclude local tfvars containing environment-specific configurations
+terraform/terraform.tfvars
+
+# ==============================================================================
+# Kubernetes & Helm Exclusions
+# ==============================================================================
+.kube/
+*.kubeconfig
+helm/rendered/
+
+# ==============================================================================
+# Security & Secret Exclusions
+# ==============================================================================
+*.env
+*.env.*
+*.pem
+*.key
+*.pfx
+*.cert
+secrets/
+.azure/
+
+# ==============================================================================
+# OS & Editor Artifacts
+# ==============================================================================
+.DS_Store
+Thumbs.db
+*.tmp
+*.bak
+.vscode/
+.idea/

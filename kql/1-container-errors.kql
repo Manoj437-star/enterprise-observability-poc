@@ -1,0 +1,16 @@
+// ==============================================================================
+// Query: 1-container-errors.kql
+// Description: Detect application errors and fatal exceptions in container logs
+// Source Table: ContainerLogV2 (Azure Monitor Container Insights)
+// ==============================================================================
+ContainerLogV2
+| where TimeGenerated > ago(1h)
+| where LogMessage has_any ("error", "exception", "fatal", "fail", "panic", "500 Internal Server Error")
+| project 
+    TimeGenerated,
+    PodNamespace,
+    PodName,
+    ContainerName,
+    LogLevel,
+    LogMessage
+| order by TimeGenerated desc

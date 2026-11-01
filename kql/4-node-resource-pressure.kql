@@ -1,0 +1,14 @@
+// ==============================================================================
+// Query: 4-node-resource-pressure.kql
+// Description: Track node CPU cores and Memory Working Set bytes trends
+// Source Table: Perf
+// ==============================================================================
+Perf
+| where TimeGenerated > ago(2h)
+| where ObjectName == "K8SContainer"
+| where CounterName in ("cpuUsageNanoCores", "memoryWorkingSetBytes")
+| summarize 
+    AvgCPU_Cores = avg(iff(CounterName == "cpuUsageNanoCores", CounterValue / 1000000000.0, real(null))),
+    AvgMemory_MB = avg(iff(CounterName == "memoryWorkingSetBytes", CounterValue / (1024.0 * 1024.0), real(null)))
+    by bin(TimeGenerated, 5m), InstanceName
+| order by TimeGenerated desc

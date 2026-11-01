@@ -1,0 +1,17 @@
+// ==============================================================================
+// Query: 3-application-failures.kql
+// Description: Identify OOMKilled containers and failed pod terminations
+// Source Table: KubePodInventory
+// ==============================================================================
+KubePodInventory
+| where TimeGenerated > ago(6h)
+| where PodStatus in ("Failed", "CrashLoopBackOff") or ContainerStatusReason in ("OOMKilled", "Error", "CrashLoopBackOff") or ContainerLastExitCode != 0
+| project 
+    TimeGenerated,
+    Namespace,
+    PodName = Name,
+    ContainerName,
+    PodStatus,
+    ContainerStatusReason,
+    ExitCode = ContainerLastExitCode
+| order by TimeGenerated desc

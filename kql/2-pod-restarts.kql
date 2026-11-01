@@ -1,0 +1,22 @@
+// ==============================================================================
+// Query: 2-pod-restarts.kql
+// Description: Track pod crash loops and container restart counts across namespaces
+// Source Table: KubePodInventory
+// ==============================================================================
+KubePodInventory
+| where TimeGenerated > ago(24h)
+| where Namespace !in ("kube-system", "gatekeeper-system")
+| summarize 
+    MaxRestarts = max(ContainerRestartCount),
+    LastSeenStatus = arg_max(TimeGenerated, PodStatus, ContainerStatusReason, ContainerLastExitCode)
+    by Namespace, PodName = Name, Container = ContainerName
+| where MaxRestarts > 0
+| project 
+    Namespace,
+    PodName,
+    Container,
+    MaxRestarts,
+    LastStatus = LastSeenStatus.PodStatus,
+    Reason = LastSeenStatus.ContainerStatusReason,
+    ExitCode = LastSeenStatus.ContainerLastExitCode
+| order by MaxRestarts desc

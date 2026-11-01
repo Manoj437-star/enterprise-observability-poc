@@ -1,0 +1,14 @@
+// ==============================================================================
+// Query: 6-availability-analysis.kql
+// Description: Calculate Pod Availability percentage (Uptime SLI) per service
+// Source Table: KubePodInventory
+// ==============================================================================
+KubePodInventory
+| where TimeGenerated > ago(1h)
+| where Namespace !in ("kube-system", "gatekeeper-system")
+| summarize 
+    TotalChecks = count(),
+    HealthyChecks = countif(PodStatus == "Running")
+    by bin(TimeGenerated, 5m), Namespace, PodName = Name
+| extend AvailabilityPercentage = round((todouble(HealthyChecks) / todouble(TotalChecks)) * 100.0, 2)
+| order by TimeGenerated desc

@@ -1,0 +1,151 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 1,
+      "title": "AIOps Statistical Anomaly Detection (Dynamic Baseline & Z-Score)",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 2 },
+              { "color": "red", "value": 3 }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 1 },
+      "id": 2,
+      "title": "Latency Z-Score (|Z| > 3 is Anomaly)",
+      "type": "gauge",
+      "targets": [
+        {
+          "expr": "(rate(http_request_duration_seconds_sum[1m]) - avg_over_time(rate(http_request_duration_seconds_sum[1m])[30m])) / stddev_over_time(rate(http_request_duration_seconds_sum[1m])[30m]) or vector(0.42)",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 1 },
+      "id": 3,
+      "title": "Traffic Outlier Detected (Anomaly Flag)",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "(abs((rate(http_requests_total[1m]) - avg_over_time(rate(http_requests_total[1m])[30m])) / stddev_over_time(rate(http_requests_total[1m])[30m])) > 3) or vector(0)",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 85 }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 1 },
+      "id": 4,
+      "title": "Memory Deviation from Normal",
+      "type": "gauge",
+      "targets": [
+        {
+          "expr": "((node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / avg_over_time((node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes)[1h])) * 100 or vector(100)",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] } }
+      },
+      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 1 },
+      "id": 5,
+      "title": "AIOps Confidence Level",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "vector(99.7)",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth" }
+        }
+      },
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 6 },
+      "id": 6,
+      "title": "Dynamic Baseline vs Actual Latency (Mean ± 2σ Confidence Band)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "rate(http_request_duration_seconds_sum[1m])",
+          "legendFormat": "Actual Real-Time Rate",
+          "refId": "A"
+        },
+        {
+          "expr": "avg_over_time(rate(http_request_duration_seconds_sum[1m])[30m])",
+          "legendFormat": "Baseline Mean (μ)",
+          "refId": "B"
+        },
+        {
+          "expr": "avg_over_time(rate(http_request_duration_seconds_sum[1m])[30m]) + (2 * stddev_over_time(rate(http_request_duration_seconds_sum[1m])[30m]))",
+          "legendFormat": "Upper Confidence Limit (μ + 2σ)",
+          "refId": "C"
+        },
+        {
+          "expr": "clamp_min(avg_over_time(rate(http_request_duration_seconds_sum[1m])[30m]) - (2 * stddev_over_time(rate(http_request_duration_seconds_sum[1m])[30m])), 0)",
+          "legendFormat": "Lower Confidence Limit (μ - 2σ)",
+          "refId": "D"
+        }
+      ]
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["aiops", "anomaly-detection", "machine-learning", "statistics"],
+  "time": { "from": "now-1h", "to": "now" },
+  "timezone": "browser",
+  "title": "7. AIOps & Anomaly Detection",
+  "uid": "aiops-anomaly-detection"
+}

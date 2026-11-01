@@ -1,0 +1,16 @@
+// ==============================================================================
+// Query: 5-request-analysis.kql
+// Description: Analyze AKS API Server request latency and HTTP status distribution
+// Source Table: AzureDiagnostics (Control Plane Diagnostic Setting)
+// ==============================================================================
+AzureDiagnostics
+| where TimeGenerated > ago(1h)
+| where Category == "kube-apiserver"
+| extend StatusCode = toint(extract("status=([0-9]{3})", 1, log_s))
+| summarize 
+    TotalRequests = count(),
+    SuccessfulRequests = countif(StatusCode < 400),
+    ClientErrors = countif(StatusCode >= 400 and StatusCode < 500),
+    ServerErrors = countif(StatusCode >= 500)
+    by bin(TimeGenerated, 5m)
+| order by TimeGenerated desc
